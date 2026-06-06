@@ -17,7 +17,7 @@
 
 ### 下载运行
 
-从 [Releases](https://github.com/YOUR_USERNAME/YOUR_REPO/releases) 下载最新版 `DeepSeek学习助手.exe`，双击运行。
+从 [Releases](https://github.com/mbj733/deepseek-learning-assistant/releases) 下载最新版 `DeepSeek学习助手.exe`，双击运行。
 
 ### 从源码运行
 
