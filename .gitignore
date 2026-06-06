@@ -1,0 +1,15 @@
+# 打包输出
+dist/
+build/
+*.spec
+__pycache__/
+*.pyc
+
+# 本地数据（用户创建的内容不上传）
+sessions.db
+sessions/
+config.yaml
+
+# 系统文件
+.DS_Store
+Thumbs.db
