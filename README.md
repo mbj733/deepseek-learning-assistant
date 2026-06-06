@@ -15,9 +15,14 @@
 
 ## 快速开始
 
-### 下载运行
+### 下载运行（推荐）
 
-从 [Releases](https://github.com/mbj733/deepseek-learning-assistant/releases) 下载最新版 `DeepSeek学习助手.exe`，双击运行。
+从 [Releases](https://github.com/mbj733/deepseek-learning-assistant/releases) 下载 `DeepSeek学习助手.exe`，双击运行。
+
+> ⚠️ **首次使用**：需在 ⚙ 设置中填入 DeepSeek API Key
+> 1. 访问 [platform.deepseek.com](https://platform.deepseek.com/) 注册账号
+> 2. 创建 API Key（新用户有免费额度）
+> 3. 粘贴到软件设置中即可使用
 
 ### 从源码运行
 
