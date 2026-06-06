@@ -727,6 +727,53 @@ class DeepSeekClient:
 #  GUI 应用
 # ══════════════════════════════════════════════════════════════════════
 
+class ToolTip:
+    """鼠标悬停提示 — tkinter 浮动小标签"""
+
+    def __init__(self, widget, text: str, delay: int = 400):
+        self.widget = widget
+        self.text = text
+        self.delay = delay
+        self._tip_window = None
+        self._after_id = None
+        widget.bind("<Enter>", self._enter)
+        widget.bind("<Leave>", self._leave)
+
+    def _enter(self, event=None):
+        self._after_id = self.widget.after(self.delay, self._show)
+
+    def _leave(self, event=None):
+        if self._after_id:
+            self.widget.after_cancel(self._after_id)
+            self._after_id = None
+        self._hide()
+
+    def _show(self):
+        if self._tip_window:
+            return
+        x = self.widget.winfo_rootx() + 20
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
+        self._tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                        background="#ffffcc", foreground="#333333",
+                        relief="solid", borderwidth=1,
+                        font=("Microsoft YaHei UI", 9),
+                        padx=8, pady=4)
+        label.pack()
+
+    def _hide(self):
+        if self._tip_window:
+            self._tip_window.destroy()
+            self._tip_window = None
+
+    @staticmethod
+    def register(widget, text: str, delay: int = 400):
+        """快捷注册"""
+        return ToolTip(widget, text, delay)
+
+
 FILE_ICONS = {
     ".pdf": "📕", ".txt": "📝", ".md": "📋",
     ".docx": "📘", ".pptx": "📊",
@@ -851,8 +898,10 @@ class DeepSeekLearnerApp:
         hdr.pack(fill=X)
         ttkb.Label(hdr, text="📚 课程列表",
                    font=("Microsoft YaHei UI", 12, "bold")).pack(side=LEFT)
-        ttkb.Button(hdr, text="＋ 新课程", bootstyle="success-outline",
-                    width=8, command=self._create_session).pack(side=RIGHT)
+        self._btn_new_course = ttkb.Button(hdr, text="＋ 新课程", bootstyle="success-outline",
+                    width=8, command=self._create_session)
+        self._btn_new_course.pack(side=RIGHT)
+        ToolTip.register(self._btn_new_course, "创建新的课程/科目")
 
         # 会话列表
         slf = ttkb.Frame(left)
@@ -877,8 +926,10 @@ class DeepSeekLearnerApp:
         kbf.pack(fill=X, padx=12, pady=(4, 0))
         ttkb.Label(kbf, text="📄 知识库",
                    font=("Microsoft YaHei UI", 10, "bold")).pack(side=LEFT)
-        ttkb.Button(kbf, text="📤 上传", bootstyle="info-outline",
-                    width=8, command=self._upload_file).pack(side=RIGHT)
+        self._btn_upload = ttkb.Button(kbf, text="📤 上传", bootstyle="info-outline",
+                    width=8, command=self._upload_file)
+        self._btn_upload.pack(side=RIGHT)
+        ToolTip.register(self._btn_upload, "上传学习资料\n支持 PDF / Word / PPT / TXT / Markdown")
 
         kbl = ttkb.Frame(left)
         kbl.pack(fill=BOTH, expand=True, padx=12, pady=4)
@@ -906,10 +957,14 @@ class DeepSeekLearnerApp:
         cf.pack(fill=X, padx=12, pady=(4, 4))
         ttkb.Label(cf, text="🎴 学习卡片",
                    font=("Microsoft YaHei UI", 10, "bold")).pack(side=LEFT)
-        ttkb.Button(cf, text="＋新建", bootstyle="warning-outline",
-                    width=6, command=self._add_card_dialog).pack(side=RIGHT)
-        ttkb.Button(cf, text="📖复习", bootstyle="info-outline",
-                    width=6, command=self._review_cards).pack(side=RIGHT, padx=3)
+        self._btn_new_card = ttkb.Button(cf, text="＋新建", bootstyle="warning-outline",
+                    width=6, command=self._add_card_dialog)
+        self._btn_new_card.pack(side=RIGHT)
+        ToolTip.register(self._btn_new_card, "创建学习卡片\n记录知识点、公式、错题等")
+        self._btn_review = ttkb.Button(cf, text="📖复习", bootstyle="info-outline",
+                    width=6, command=self._review_cards)
+        self._btn_review.pack(side=RIGHT, padx=3)
+        ToolTip.register(self._btn_review, "开始复习学习卡片")
 
         self.card_list = ttkb.Frame(left)
         self.card_list.pack(fill=X, padx=12, pady=(0, 4))
@@ -947,11 +1002,20 @@ class DeepSeekLearnerApp:
         self.stat_label.pack(side=LEFT, padx=(0, 10))
 
         # 主题切换按钮
-        ttkb.Button(btn_right, text="🌙", bootstyle="outline-secondary",
-                    width=3, command=self._toggle_theme).pack(side=RIGHT, padx=2)
+        self._btn_feedback = ttkb.Button(btn_right, text="💬", bootstyle="outline-secondary",
+                    width=3, command=self._open_feedback)
+        self._btn_feedback.pack(side=RIGHT, padx=2)
+        ToolTip.register(self._btn_feedback, "提交反馈意见\n通过 GitHub Issues 告诉我们")
 
-        ttkb.Button(btn_right, text="⚙", bootstyle="outline-secondary",
-                    width=3, command=self.open_settings).pack(side=RIGHT)
+        self._btn_theme = ttkb.Button(btn_right, text="🌙", bootstyle="outline-secondary",
+                    width=3, command=self._toggle_theme)
+        self._btn_theme.pack(side=RIGHT, padx=2)
+        ToolTip.register(self._btn_theme, "切换深色/浅色主题")
+
+        self._btn_settings = ttkb.Button(btn_right, text="⚙", bootstyle="outline-secondary",
+                    width=3, command=self.open_settings)
+        self._btn_settings.pack(side=RIGHT)
+        ToolTip.register(self._btn_settings, "打开设置\n配置 API Key 和模型")
 
         # 分隔线
         ttk.Separator(right, orient=HORIZONTAL).grid(row=1, column=0, sticky="ew", padx=10)
@@ -994,6 +1058,7 @@ class DeepSeekLearnerApp:
         self.send_btn = ttkb.Button(inp, text="发送 ▶", bootstyle="success",
                                     command=self.send_message, width=10)
         self.send_btn.grid(row=0, column=1, sticky="ns")
+        ToolTip.register(self.send_btn, "发送消息 (Enter 快捷发送)")
 
         ttkb.Label(inp, text="Enter 发送 | Shift+Enter 换行",
             font=("Microsoft YaHei UI", 8), bootstyle="secondary"
@@ -1830,6 +1895,15 @@ class DeepSeekLearnerApp:
 
     def _on_close(self):
         self.root.destroy()
+
+    # ════════════════════════════════════════════════════════════════
+    #  用户反馈
+    # ════════════════════════════════════════════════════════════════
+
+    def _open_feedback(self):
+        """打开 GitHub Issues 反馈页"""
+        import webbrowser
+        webbrowser.open("https://github.com/mbj733/deepseek-learning-assistant/issues/new")
 
     # ════════════════════════════════════════════════════════════════
     #  主题切换
