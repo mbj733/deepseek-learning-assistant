@@ -241,19 +241,40 @@ class PaddleOCREngine:
       - 纯本地，免费，离线
       - 中文识别效果极好
       - 但只能识别文字，不理解图表含义
+
+    兼容 PaddleOCR 2.x / 3.x
     """
 
     def __init__(self):
         self._ocr = None
         self._available = False
+        self._is_v3 = False  # PaddleOCR 3.x 标记
         self._init()
 
     def _init(self):
         try:
-            from paddleocr import PaddleOCR
-            self._ocr = PaddleOCR(use_angle_cls=True, lang='ch',
-                                  show_log=False, use_gpu=False)
+            # PaddleOCR 3.x 导入路径
+            import os
+            os.environ['PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK'] = 'True'
+
+            try:
+                from paddleocr._pipelines import PaddleOCR as _PaddleOCR
+                self._ocr = _PaddleOCR()
+                self._is_v3 = True
+            except (ImportError, AttributeError):
+                try:
+                    from paddleocr import PaddleOCR as _PaddleOCR
+                    self._ocr = _PaddleOCR()
+                    self._is_v3 = True
+                except (ImportError, TypeError, ValueError):
+                    # PaddleOCR 2.x 旧版 API
+                    from paddleocr import PaddleOCR as _PaddleOCR
+                    self._ocr = _PaddleOCR(use_angle_cls=True, lang='ch',
+                                          show_log=False, use_gpu=False)
+                    self._is_v3 = False
+
             self._available = True
+
         except ImportError:
             self._available = False
         except Exception as e:
@@ -269,22 +290,41 @@ class PaddleOCREngine:
             return ""
 
         try:
-            tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-            tmp.write(image_bytes)
-            tmp.close()
+            # 写入临时文件（先 close 再使用，避免 Windows 文件锁）
+            import uuid
+            tmp_path = os.path.join(tempfile.gettempdir(),
+                                    f"ocr_{uuid.uuid4().hex}.png")
+            with open(tmp_path, "wb") as f:
+                f.write(image_bytes)
 
-            result = self._ocr.ocr(tmp.name, cls=True)
-            os.unlink(tmp.name)
+            # 调用 OCR（根据版本选择 API）
+            if self._is_v3:
+                result = self._ocr.ocr(tmp_path)
+            else:
+                result = self._ocr.ocr(tmp_path, cls=True)
 
-            if not result or not result[0]:
+            # 清理临时文件
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+
+            # 解析结果
+            if not result:
                 return "[图片中未识别到文字]"
 
+            # PaddleOCR 3.x 返回格式可能不同
             texts = []
-            for line in result[0]:
-                text = line[1][0]
-                confidence = line[1][1]
-                if confidence > 0.5:
-                    texts.append(text)
+            if isinstance(result, list) and len(result) > 0:
+                lines = result[0] if isinstance(result[0], list) else result
+                for line in lines:
+                    if isinstance(line, (list, tuple)) and len(line) >= 2:
+                        text_info = line[1] if isinstance(line[1], (list, tuple)) else line
+                        if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:
+                            text = str(text_info[0])
+                            confidence = float(text_info[1])
+                            if confidence > 0.3:
+                                texts.append(text)
 
             if texts:
                 return "【图片中的文字】\n" + "\n".join(texts)
