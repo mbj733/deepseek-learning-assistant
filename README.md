@@ -1,69 +1,55 @@
-# DeepSeek 学习助手 📚
+# DeepSeek 学习助手 v5 🎓
 
-基于 DeepSeek API 的 Windows 桌面学习助手，支持多课程、知识库 RAG、学习卡片和文档图片理解。
+基于 **DeepSeek API（deepseek-v4）** 的现代桌面学习助手：LLM Wiki 自动知识库、省 token 检索、PySide6 精致 UI。
 
 ## 功能特性
 
-- **💬 AI 智能问答** — 基于 DeepSeek V4 模型的流式对话
-- **📁 多课程管理** — 不同科目独立会话，互不干扰
-- **📄 知识库 RAG** — 上传教材自动建索引，问答严格基于资料
-- **🎴 学习卡片** — 创建知识点卡片，分级复习
-- **🖼️ 文档图片理解** — 支持通义千问 VL / Gemini / PaddleOCR 三种后端
-- **📎 多格式支持** — PDF / Word / PPT / TXT / Markdown
-- **🌙 深色模式** — 一键切换护眼暗色主题
-- **💾 对话持久化** — 关闭重开，历史记录不丢失
+- **🤖 AI 智能问答** — deepseek-v4-flash / deepseek-v4-pro 流式对话，支持思考过程显示
+- **📁 课程即项目** — 每个课程是一个 LLM Wiki 项目（raw/ + wiki/ + schema + purpose）
+- **✦ 自动知识库（LLM Wiki ingest）** — 上传学习资料 → 两步 CoT 自动生成摘要页/实体页/主题页，SHA256 增量缓存跳过未变文件
+- **🔍 混合检索** — SQLite FTS5 粗筛 + wiki 页面精排 + token 预算装填
+- **💰 省 token** — DeepSeek 前缀缓存稳定设计（缓存命中 90% 折扣）、对话滚动压缩、检索预算控制
+- **🎴 学习卡片** — 知识点卡片 + 难度分级复习
+- **🖼️ 文档图片理解** — 可选（qwen / gemini / paddle 后端）
+- **🌗 深浅色主题** — PySide6 + QSS 现代界面（圆角卡片 / 悬停反馈 / 空状态引导）
 
 ## 快速开始
 
-### 下载运行（推荐）
-
-从 [Releases](https://github.com/mbj733/deepseek-learning-assistant/releases) 下载 `DeepSeek学习助手.exe`，双击运行。
-
-> ⚠️ **首次使用**：需在 ⚙ 设置中填入 DeepSeek API Key
-> 1. 访问 [platform.deepseek.com](https://platform.deepseek.com/) 注册账号
-> 2. 创建 API Key（新用户有免费额度）
-> 3. 粘贴到软件设置中即可使用
-
-### 从源码运行
-
 ```bash
-# 1. 安装依赖
-pip install ttkbootstrap requests PyMuPDF python-docx python-pptx pyyaml
+# 1. 安装依赖（PySide6 建议用阿里云镜像加速）
+pip install -r requirements.txt
 
 # 2. 运行
-python deepseek_learner_v3.py
+python app.py
 ```
 
-### 获取 API Key
+首次使用：点击右上角 ⚙ 设置 → 填入 DeepSeek API Key（[platform.deepseek.com](https://platform.deepseek.com/)）→ 选择模型 → 保存。
 
-1. **DeepSeek API** — [platform.deepseek.com](https://platform.deepseek.com/)（必需）
-2. **通义千问 VL**（图片理解，国内推荐）— [dashscope.aliyun.com](https://dashscope.aliyun.com/)
-3. **Gemini**（图片理解，海外）— [aistudio.google.com](https://aistudio.google.com/)
+## 使用流程
+
+1. 左侧 **＋** 新建课程（= 一个 LLM Wiki 项目）
+2. **上传** 学习资料（PDF / Word / PPT / TXT / Markdown）
+3. 点 **整理知识**：LLM 自动把资料整理成知识库（摘要 / 实体 / 主题页）
+4. 中间对话区提问，底部实时显示 **缓存命中率** 与 token 用量
+5. 左侧 **知识** 标签浏览 wiki 页面，**学习卡片** 管理知识点
 
 ## 项目结构
 
 ```
-D:.
-├── deepseek_learner_v3.py    # 主程序
-├── document_vision.py        # 文档图片理解模块
-├── config.yaml               # 配置文件（自动生成）
-├── sessions.db               # 会话数据库（自动生成）
-└── sessions/                 # 上传的文件（自动生成）
+deepseek-learning-assistant/
+├── app.py               # 入口
+├── core/                # 配置 / 数据库 / token 预算 / DeepSeek 客户端 / 省 token 对话组装
+├── wiki/                # LLM Wiki：模板 / 项目 / 两步 CoT ingest / 混合检索
+├── features/            # 会话 / 学习卡片 / 图片理解
+└── ui_qt/               # PySide6 界面：主题 / 侧栏 / 聊天 / 预览 / 对话框
 ```
-
-## 截图
-
-<!-- 可以放截图，比如：
-![主界面](screenshots/main.png)
--->
 
 ## 技术栈
 
-- **Python 3.11+** / Tkinter / ttkbootstrap
-- **DeepSeek API**（deepseek-v4-flash / deepseek-v4-pro）
-- **SQLite + FTS5** 全文搜索
-- **PyMuPDF** PDF 处理
-- **通义千问 VL / Gemini** 图片理解
+- **PySide6 + QSS**（现代圆角 UI，深浅主题）
+- **DeepSeek API**（deepseek-v4-flash / deepseek-v4-pro，1M 上下文）
+- **SQLite + FTS5** 全文检索
+- **markdown** 渲染
 
 ## 许可证
 
